@@ -366,13 +366,13 @@ function onMessage(msg: m.Message) {
     } else if (msg.method === DidOpenTextDocumentNotification.method) {
       let params = msg.params as p.DidOpenTextDocumentParams;
       let extName = path.extname(params.textDocument.uri);
-      if (extName === c.resExt || extName === c.resiExt) {
+      if (extName === c.resExt || extName === c.resiExt || extName === c.reExt || extName === c.reiExt) {
         openedFile(params.textDocument.uri, params.textDocument.text);
       }
     } else if (msg.method === DidChangeTextDocumentNotification.method) {
       let params = msg.params as p.DidChangeTextDocumentParams;
       let extName = path.extname(params.textDocument.uri);
-      if (extName === c.resExt || extName === c.resiExt) {
+      if (extName === c.resExt || extName === c.resiExt || extName === c.reExt || extName === c.reiExt) {
         let changes = params.contentChanges;
         if (changes.length === 0) {
           // no change?
@@ -487,7 +487,59 @@ function onMessage(msg: m.Message) {
       let params = msg.params as p.DocumentFormattingParams;
       let filePath = fileURLToPath(params.textDocument.uri);
       let extension = path.extname(params.textDocument.uri);
-      if (extension !== c.resExt && extension !== c.resiExt) {
+      if (extension === c.reExt || extension === c.reiExt) {
+        // See comment on findBscExeDirOfFile for why we need
+        // to recursively search for bsc.exe upward
+        let refmtExeDir = utils.findRefmtExeDirOfFile(filePath);
+        if (refmtExeDir === null) {
+          let params: p.ShowMessageParams = {
+            type: p.MessageType.Error,
+            message: `Cannot find a nearby refmt. It's needed for formatting.`,
+          };
+          let response: m.NotificationMessage = {
+            jsonrpc: c.jsonrpcVersion,
+            method: "window/showMessage",
+            params: params,
+          };
+          process.send!(fakeSuccessResponse);
+          process.send!(response);
+        } else {
+          let resolvedRefmtPath = path.join(refmtExeDir, c.refmtExePartialPath);
+          // code will always be defined here, even though technically it can be undefined
+          let code = getOpenedFileContent(params.textDocument.uri);
+          let formattedResult = utils.formatUsingValidRefmtPath(
+            code,
+            resolvedRefmtPath,
+            extension === c.reiExt
+          );
+          if (formattedResult.kind === "success") {
+            let result: p.TextEdit[] = [
+              {
+                range: {
+                  start: { line: 0, character: 0 },
+                  end: {
+                    line: Number.MAX_VALUE,
+                    character: Number.MAX_VALUE,
+                  },
+                },
+                newText: formattedResult.result,
+              },
+            ];
+            let response: m.ResponseMessage = {
+              jsonrpc: c.jsonrpcVersion,
+              id: msg.id,
+              result: result,
+            };
+            process.send!(response);
+          } else {
+            // let the diagnostics logic display the updated syntax errors,
+            // from the build.
+            // Again, not sending the actual errors. See fakeSuccessResponse
+            // above for explanation
+            process.send!(fakeSuccessResponse);
+          }
+        }
+      } else if (extension !== c.resExt && extension !== c.resiExt) {
         let params: p.ShowMessageParams = {
           type: p.MessageType.Error,
           message: `Not a ${c.resExt} or ${c.resiExt} file. Cannot format it.`,

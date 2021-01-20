@@ -35,6 +35,15 @@ export let rescriptNodePartialPath = path.join(
   ".bin",
   "rescript"
 );
+export let refmtExePartialPath = path.join(
+  "node_modules",
+  ".bin",
+  "bsrefmt"
+);
+
+
+// can't use the native bsb since we might need the watcher -w flag, which is only in the js wrapper
+// export let bsbPartialPath = path.join('node_modules', 'bs-platform', process.platform, 'bsb.exe');
 export let bsbNodePartialPath = path.join("node_modules", ".bin", "bsb");
 
 export let bsbLock = ".bsb.lock";
@@ -44,4 +53,6 @@ export let compilerLogPartialPath = path.join("lib", "bs", ".compiler.log");
 export let resExt = ".res";
 export let resiExt = ".resi";
 export let cmiExt = ".cmi";
+export let reExt = ".re";
+export let reiExt = ".rei";
 export let startBuildAction = "Start Build";

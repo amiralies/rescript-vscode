@@ -84,6 +84,23 @@ export let findNodeBuildOfProjectRoot = (
   return null;
 };
 
+export let findRefmtExeDirOfFile = (
+	source: p.DocumentUri
+): null | p.DocumentUri => {
+	let dir = path.dirname(source);
+	let refmtPath = path.join(dir, c.refmtExePartialPath);
+	if (fs.existsSync(refmtPath)) {
+		return dir;
+	} else {
+		if (dir === source) {
+			// reached the top
+			return null;
+		} else {
+			return findRefmtExeDirOfFile(dir);
+		}
+	}
+};
+
 type execResult =
   | {
       kind: "success";
@@ -200,6 +217,26 @@ export let createInterfaceFileUsingValidBscExePath = (
   } catch (e) {
     return {
       kind: "error",
+      error: e.message,
+    };
+  }
+};
+
+export let formatUsingValidRefmtPath = (code: string, refmtPath: p.DocumentUri, isInterface: boolean): execResult => {
+  let cmdArgs = isInterface ? ['-i', 'true'] : [];
+
+  try {
+    let result = childProcess.execFileSync(refmtPath, cmdArgs, {
+      input: code,
+      stdio: 'pipe',
+    });
+    return {
+      kind: 'success',
+      result: result.toString(),
+    };
+  } catch (e) {
+    return {
+      kind: 'error',
       error: e.message,
     };
   }
