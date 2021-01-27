@@ -24,7 +24,8 @@
 		"vscode": "^1.55.0"
 	},
 	"activationEvents": [
-		"onLanguage:rescript"
+		"onLanguage:rescript",
+		"onLanguage:reason"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
