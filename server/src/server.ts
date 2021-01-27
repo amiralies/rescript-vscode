@@ -536,7 +536,17 @@ function onMessage(msg: m.Message) {
             // from the build.
             // Again, not sending the actual errors. See fakeSuccessResponse
             // above for explanation
+            let params: p.ShowMessageParams = {
+              type: p.MessageType.Error,
+              message: 'Formatting failed, probably syntax error',
+            };
+            let response: m.NotificationMessage = {
+              jsonrpc: c.jsonrpcVersion,
+              method: "window/showMessage",
+              params: params,
+            };
             process.send!(fakeSuccessResponse);
+            process.send!(response);
           }
         }
       } else if (extension !== c.resExt && extension !== c.resiExt) {
